@@ -24,15 +24,6 @@ abstract class AbstractSimpleHtmlDom
     ];
 
     /**
-     * @var string[]
-     */
-    protected static $stringDomNodes = [
-        'id',
-        'prefix',
-        'content'
-    ];
-
-    /**
      * @var \DOMElement|\DOMNode|null
      */
     protected $node;
@@ -176,13 +167,11 @@ abstract class AbstractSimpleHtmlDom
             default:
                 if ($this->node && \property_exists($this->node, $nameOrig)) {
                     // INFO: Cannot assign null to property DOMNode::* of type string
-                    if (in_array($nameOrig, self::$stringDomNodes)) {
+                    if ($nameOrig === 'prefix' || $nameOrig === 'textContent') {
                         $value = (string)$value;
                     }
 
-                    if (!is_null($value)) {
-                        return $this->node->{$nameOrig} = $value;
-                    }
+                    return $this->node->{$nameOrig} = $value;
                 }
 
                 return $this->setAttribute($name, $value);

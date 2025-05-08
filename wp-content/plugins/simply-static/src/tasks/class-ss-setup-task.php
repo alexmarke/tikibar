@@ -1,5 +1,4 @@
 <?php
-
 namespace Simply_Static;
 
 /**
@@ -33,29 +32,36 @@ class Setup_Task extends Task {
 			Util::debug_log( 'Creating archive directory: ' . $archive_dir );
 			$create_dir = wp_mkdir_p( $archive_dir );
 			if ( $create_dir === false ) {
-				return new \WP_Error( 'cannot_create_archive_dir', sprintf( __( 'Cannot create archive directory %s' ), $archive_dir ) );
+				return new \WP_Error( 'cannot_create_archive_dir' );
 			}
 		}
 
+		// TODO: Add a way for the user to perform this, optionally, so that we
+		// don't need to do it every time. Then enable the two commented-out
+		// sections below.
 		$use_single = get_option( 'simply-static-use-single' );
 		$use_build  = get_option( 'simply-static-use-build' );
-		$type       = $this->options->get( 'generate_type' );
 
-		if ( ! $type ) {
-			$type = 'export';
-		}
-
-		if ( empty( $use_build ) && empty( $use_single ) && 'export' === $type ) {
+		if ( empty( $use_build ) && empty( $use_single ) ) {
 			Page::query()->delete_all();
 		}
+
+		// clear out any saved error messages on pages
+		//Page::query()
+		//->update_all( 'error_message', null );
+
+		// delete pages that we can't process
+		//Page::query()
+		//->where( 'http_status_code IS NULL OR http_status_code NOT IN (?)', implode( ',', Page::$processable_status_codes ) )
+		//->delete_all();
 
 		// add origin url and additional urls/files to database.
 		$additional_urls = apply_filters( 'ss_setup_task_additional_urls', $this->options->get( 'additional_urls' ) );
 
-		$this->add_origin_and_additional_urls_to_db( $additional_urls );
-		$this->add_additional_files_to_db( $this->options->get( 'additional_files' ) );
+		self::add_origin_and_additional_urls_to_db( $additional_urls );
+		self::add_additional_files_to_db( $this->options->get( 'additional_files' ) );
 
-		do_action( 'ss_after_setup_task' );
+		do_action('ss_after_setup_task');
 
 		return true;
 	}
@@ -63,20 +69,20 @@ class Setup_Task extends Task {
 	/**
 	 * Ensure the Origin URL and user-specified Additional URLs are in the DB.
 	 *
-	 * @param string $additional_urls array of additional urls.
-	 *
+	 * @param  array $additional_urls array of additional urls.
 	 * @return void
 	 */
-	public function add_origin_and_additional_urls_to_db( $additional_urls ) {
+	public static function add_origin_and_additional_urls_to_db( $additional_urls ) {
 		$origin_url = trailingslashit( Util::origin_url() );
 		Util::debug_log( 'Adding origin URL to queue: ' . $origin_url );
 		$static_page = Page::query()->find_or_initialize_by( 'url', $origin_url );
-		$static_page->set_status_message( __( 'Origin URL', 'simply-static' ) );
+		$static_page->set_status_message( __( "Origin URL", 'simply-static' ) );
+		// setting to 0 for "not found anywhere" since it's either the origin
+		// or something the user specified
 		$static_page->found_on_id = 0;
 		$static_page->save();
 
-		$urls = apply_filters( 'ss_additional_urls', array_unique( Util::string_to_array( $additional_urls ) ) );
-
+		$urls = array_unique( Util::string_to_array( $additional_urls ) );
 		foreach ( $urls as $url ) {
 			if ( Util::is_local_url( $url ) ) {
 				Util::debug_log( 'Adding additional URL to queue: ' . $url );
@@ -91,52 +97,13 @@ class Setup_Task extends Task {
 	/**
 	 * Convert Additional Files/Directories to URLs and add them to the database.
 	 *
-	 * @param string $additional_files array of additional files.
-	 *
+	 * @param  array $additional_files array of additional files.
 	 * @return void
 	 */
-	public function add_additional_files_to_db( $additional_files ) {
-		$additional_files = apply_filters( 'ss_additional_files', Util::string_to_array( $additional_files ) );
+	public static function add_additional_files_to_db( $additional_files ) {
+		// Convert additional files to URLs and add to queue
+		foreach ( Util::string_to_array( $additional_files ) as $item ) {
 
-		// Add robots.txt if exists.
-		$robots_txt = ABSPATH . 'robots.txt';
-
-		if ( file_exists( $robots_txt ) ) {
-			$additional_files[] = $robots_txt;
-		}
-
-		// Add feeds if enabled.
-		if ( $this->options->get( 'add_feeds' ) ) {
-			// Create feed directory it doesn't exist.
-			$feed_directory = untrailingslashit( $this->options->get_archive_dir() ) . '/feed';
-
-			if ( ! file_exists( $feed_directory ) ) {
-				wp_mkdir_p( $feed_directory );
-			}
-
-			// Create index.html file for feed directory.
-			file_put_contents( $feed_directory . '/index.html',
-				'<!DOCTYPE html>
-			<html>
-				<head>
-					<title>Redirecting...</title>
-					<meta http-equiv="refresh" content="0;url=index.xml">
-				</head>
-				<body>
-					<script type="text/javascript">
-						window.location = "index.xml";
-					</script>
-					<p>You are being redirected to <a href="index.xml">index.xml</a></p>
-				</body>
-			</html>'
-			);
-
-			// Add feed redirect file to additional files.
-			$additional_files[] = $feed_directory . '/index.html';
-		}
-
-		// Convert additional files to URLs and add to queue.
-		foreach ( $additional_files as $item ) {
 			// If item is a file, convert to url and insert into database.
 			// If item is a directory, recursively iterate and grab all files,
 			// and for each file, convert to url and insert into database.
@@ -145,11 +112,10 @@ class Setup_Task extends Task {
 					$url = self::convert_path_to_url( $item );
 					Util::debug_log( "File " . $item . ' exists; adding to queue as: ' . $url );
 					$static_page = Page::query()
-					                   ->find_or_create_by( 'url', $url );
+						->find_or_create_by( 'url', $url );
 					$static_page->set_status_message( __( "Additional File", 'simply-static' ) );
 					// setting found_on_id to 0 since this was user-specified
 					$static_page->found_on_id = 0;
-					$static_page->handler     = Additional_File_Handler::class;
 					$static_page->save();
 				} else {
 					Util::debug_log( "Adding files from directory: " . $item );
@@ -160,7 +126,6 @@ class Setup_Task extends Task {
 						Util::debug_log( "Adding file " . $file_name . ' to queue as: ' . $url );
 						$static_page = Page::query()->find_or_initialize_by( 'url', $url );
 						$static_page->set_status_message( __( "Additional Dir", 'simply-static' ) );
-						$static_page->handler     = Additional_File_Handler::class;
 						$static_page->found_on_id = 0;
 						$static_page->save();
 					}
@@ -174,8 +139,7 @@ class Setup_Task extends Task {
 	/**
 	 * Convert a directory path into a valid WordPress URL
 	 *
-	 * @param string $path The path to a directory or a file.
-	 *
+	 * @param  string $path The path to a directory or a file.
 	 * @return string       The WordPress URL for the given path.
 	 */
 	private static function convert_path_to_url( $path ) {
@@ -187,7 +151,7 @@ class Setup_Task extends Task {
 		} elseif ( stripos( $path, get_home_path() ) === 0 ) {
 			$url = str_replace( untrailingslashit( get_home_path() ), Util::origin_url(), $path );
 		}
-
+		
 		// Windows support
 		$url = Util::normalize_slashes( $url );
 
@@ -203,12 +167,7 @@ class Setup_Task extends Task {
 		$options = Options::instance();
 		$dir     = $options->get( 'temp_files_dir' );
 
-		if ( empty( $dir ) ) {
-			$upload_dir = wp_upload_dir();
-			$dir        = $upload_dir['basedir'] . DIRECTORY_SEPARATOR . 'simply-static' . DIRECTORY_SEPARATOR . 'temp-files';
-		}
-
-		if ( false === file_exists( $dir ) || 'update' === $options->get( 'generate_type' ) ) {
+		if ( false === file_exists( $dir ) ) {
 			return false;
 		}
 
@@ -231,7 +190,6 @@ class Setup_Task extends Task {
 				}
 			}
 		}
-
 		return true;
 	}
 }

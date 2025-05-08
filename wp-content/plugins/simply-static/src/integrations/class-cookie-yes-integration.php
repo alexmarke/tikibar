@@ -13,17 +13,12 @@ class CookieYes_Integration extends Integration {
 	 */
 	protected $id = 'cookieyes';
 
-	public function __construct() {
-		$this->name = __( 'CookieYes | GDPR Cookie Consent', 'simply-static' );
-		$this->description = __( 'Fixes scripts given by CookieYes to work on exported pages.', 'simply-static' );
-	}
-
 	/**
-	 * Return if the dependency is active.
+	 * Can this integration run?
 	 *
-	 * @return boolean
+	 * @return bool
 	 */
-	public function dependency_active() {
+	public function can_run() {
 		return defined( 'CKY_APP_URL' );
 	}
 
@@ -49,7 +44,7 @@ class CookieYes_Integration extends Integration {
 				continue;
 			}
 
-			$tag->innerhtmlKeep = preg_replace( '/<\\\/i', '<', $tag->innerhtmlKeep );
+			$tag->innertext = preg_replace( '/<\\\/i', '<', $tag->innertext );
 		}
 	}
 }

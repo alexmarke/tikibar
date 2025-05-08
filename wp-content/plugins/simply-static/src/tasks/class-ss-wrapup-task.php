@@ -1,5 +1,4 @@
 <?php
-
 namespace Simply_Static;
 
 /**
@@ -25,13 +24,6 @@ class Wrapup_Task extends Task {
 
 		// Unschedule cron first.
 		wp_clear_scheduled_hook( 'simply_static_site_export_cron' );
-
-		// Clear WP object cache.
-		$flush_cashe = apply_filters( 'ss_flush_cache', true );
-
-		if ( $flush_cashe ) {
-			wp_cache_flush();
-		}
 
 		do_action( 'ss_after_cleanup' );
 

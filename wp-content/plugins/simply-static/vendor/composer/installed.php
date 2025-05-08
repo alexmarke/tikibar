@@ -1,122 +1,123 @@
-<?php return array(
-    'root' => array(
-        'name' => 'simplystatic/simply-static',
-        'pretty_version' => 'dev-master',
-        'version' => 'dev-master',
-        'reference' => '83da0bf69fcda8e17b507550606fa5e138082a61',
-        'type' => 'wordpress-plugin',
-        'install_path' => __DIR__ . '/../../',
-        'aliases' => array(),
-        'dev' => true,
+<?php return array (
+  'root' => 
+  array (
+    'pretty_version' => '1.0.0+no-version-set',
+    'version' => '1.0.0.0',
+    'aliases' => 
+    array (
     ),
-    'versions' => array(
-        'deliciousbrains/wp-background-processing' => array(
-            'pretty_version' => '1.3.1',
-            'version' => '1.3.1.0',
-            'reference' => '6d1e48165e461260075b9f161b3861c7278f71e7',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../deliciousbrains/wp-background-processing',
-            'aliases' => array(),
-            'dev_requirement' => false,
-        ),
-        'simplystatic/simply-static' => array(
-            'pretty_version' => 'dev-master',
-            'version' => 'dev-master',
-            'reference' => '83da0bf69fcda8e17b507550606fa5e138082a61',
-            'type' => 'wordpress-plugin',
-            'install_path' => __DIR__ . '/../../',
-            'aliases' => array(),
-            'dev_requirement' => false,
-        ),
-        'symfony/css-selector' => array(
-            'pretty_version' => 'v5.4.45',
-            'version' => '5.4.45.0',
-            'reference' => '4f7f3c35fba88146b56d0025d20ace3f3901f097',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../symfony/css-selector',
-            'aliases' => array(),
-            'dev_requirement' => false,
-        ),
-        'symfony/polyfill-iconv' => array(
-            'pretty_version' => 'v1.31.0',
-            'version' => '1.31.0.0',
-            'reference' => '48becf00c920479ca2e910c22a5a39e5d47ca956',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../symfony/polyfill-iconv',
-            'aliases' => array(),
-            'dev_requirement' => false,
-        ),
-        'symfony/polyfill-intl-grapheme' => array(
-            'pretty_version' => 'v1.31.0',
-            'version' => '1.31.0.0',
-            'reference' => 'b9123926e3b7bc2f98c02ad54f6a4b02b91a8abe',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../symfony/polyfill-intl-grapheme',
-            'aliases' => array(),
-            'dev_requirement' => false,
-        ),
-        'symfony/polyfill-intl-normalizer' => array(
-            'pretty_version' => 'v1.31.0',
-            'version' => '1.31.0.0',
-            'reference' => '3833d7255cc303546435cb650316bff708a1c75c',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../symfony/polyfill-intl-normalizer',
-            'aliases' => array(),
-            'dev_requirement' => false,
-        ),
-        'symfony/polyfill-mbstring' => array(
-            'pretty_version' => 'v1.31.0',
-            'version' => '1.31.0.0',
-            'reference' => '85181ba99b2345b0ef10ce42ecac37612d9fd341',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../symfony/polyfill-mbstring',
-            'aliases' => array(),
-            'dev_requirement' => false,
-        ),
-        'symfony/polyfill-php72' => array(
-            'pretty_version' => 'v1.31.0',
-            'version' => '1.31.0.0',
-            'reference' => 'fa2ae56c44f03bed91a39bfc9822e31e7c5c38ce',
-            'type' => 'metapackage',
-            'install_path' => null,
-            'aliases' => array(),
-            'dev_requirement' => false,
-        ),
-        'symfony/polyfill-php80' => array(
-            'pretty_version' => 'v1.31.0',
-            'version' => '1.31.0.0',
-            'reference' => '60328e362d4c2c802a54fcbf04f9d3fb892b4cf8',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../symfony/polyfill-php80',
-            'aliases' => array(),
-            'dev_requirement' => false,
-        ),
-        'voku/portable-ascii' => array(
-            'pretty_version' => '2.0.3',
-            'version' => '2.0.3.0',
-            'reference' => 'b1d923f88091c6bf09699efcd7c8a1b1bfd7351d',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../voku/portable-ascii',
-            'aliases' => array(),
-            'dev_requirement' => false,
-        ),
-        'voku/portable-utf8' => array(
-            'pretty_version' => '6.0.13',
-            'version' => '6.0.13.0',
-            'reference' => 'b8ce36bf26593e5c2e81b1850ef0ffb299d2043f',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../voku/portable-utf8',
-            'aliases' => array(),
-            'dev_requirement' => false,
-        ),
-        'voku/simple_html_dom' => array(
-            'pretty_version' => '4.8.10',
-            'version' => '4.8.10.0',
-            'reference' => '716822ed52ed3a1881542be07a786270de390e99',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../voku/simple_html_dom',
-            'aliases' => array(),
-            'dev_requirement' => false,
-        ),
+    'reference' => NULL,
+    'name' => 'patrickposner/simply-static',
+  ),
+  'versions' => 
+  array (
+    'a5hleyrich/wp-background-processing' => 
+    array (
+      'pretty_version' => '1.0.2',
+      'version' => '1.0.2.0',
+      'aliases' => 
+      array (
+      ),
+      'reference' => '2cbee1abd1b49e1133cd8f611df4d4fc5a8b9800',
     ),
+    'patrickposner/simply-static' => 
+    array (
+      'pretty_version' => '1.0.0+no-version-set',
+      'version' => '1.0.0.0',
+      'aliases' => 
+      array (
+      ),
+      'reference' => NULL,
+    ),
+    'symfony/css-selector' => 
+    array (
+      'pretty_version' => 'v5.4.21',
+      'version' => '5.4.21.0',
+      'aliases' => 
+      array (
+      ),
+      'reference' => '95f3c7468db1da8cc360b24fa2a26e7cefcb355d',
+    ),
+    'symfony/polyfill-iconv' => 
+    array (
+      'pretty_version' => 'v1.27.0',
+      'version' => '1.27.0.0',
+      'aliases' => 
+      array (
+      ),
+      'reference' => '927013f3aac555983a5059aada98e1907d842695',
+    ),
+    'symfony/polyfill-intl-grapheme' => 
+    array (
+      'pretty_version' => 'v1.27.0',
+      'version' => '1.27.0.0',
+      'aliases' => 
+      array (
+      ),
+      'reference' => '511a08c03c1960e08a883f4cffcacd219b758354',
+    ),
+    'symfony/polyfill-intl-normalizer' => 
+    array (
+      'pretty_version' => 'v1.27.0',
+      'version' => '1.27.0.0',
+      'aliases' => 
+      array (
+      ),
+      'reference' => '19bd1e4fcd5b91116f14d8533c57831ed00571b6',
+    ),
+    'symfony/polyfill-mbstring' => 
+    array (
+      'pretty_version' => 'v1.27.0',
+      'version' => '1.27.0.0',
+      'aliases' => 
+      array (
+      ),
+      'reference' => '8ad114f6b39e2c98a8b0e3bd907732c207c2b534',
+    ),
+    'symfony/polyfill-php72' => 
+    array (
+      'pretty_version' => 'v1.27.0',
+      'version' => '1.27.0.0',
+      'aliases' => 
+      array (
+      ),
+      'reference' => '869329b1e9894268a8a61dabb69153029b7a8c97',
+    ),
+    'symfony/polyfill-php80' => 
+    array (
+      'pretty_version' => 'v1.27.0',
+      'version' => '1.27.0.0',
+      'aliases' => 
+      array (
+      ),
+      'reference' => '7a6ff3f1959bb01aefccb463a0f2cd3d3d2fd936',
+    ),
+    'voku/portable-ascii' => 
+    array (
+      'pretty_version' => '2.0.1',
+      'version' => '2.0.1.0',
+      'aliases' => 
+      array (
+      ),
+      'reference' => 'b56450eed252f6801410d810c8e1727224ae0743',
+    ),
+    'voku/portable-utf8' => 
+    array (
+      'pretty_version' => '6.0.13',
+      'version' => '6.0.13.0',
+      'aliases' => 
+      array (
+      ),
+      'reference' => 'b8ce36bf26593e5c2e81b1850ef0ffb299d2043f',
+    ),
+    'voku/simple_html_dom' => 
+    array (
+      'pretty_version' => '4.8.8',
+      'version' => '4.8.8.0',
+      'aliases' => 
+      array (
+      ),
+      'reference' => '9ef90f0280fe16054c117e04ea86617ce0fcdd35',
+    ),
+  ),
 );

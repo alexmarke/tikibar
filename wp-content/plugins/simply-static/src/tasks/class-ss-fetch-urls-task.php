@@ -15,20 +15,6 @@ class Fetch_Urls_Task extends Task {
 	public static $task_name = 'fetch_urls';
 
 	/**
-	 * The path to the archive directory.
-	 *
-	 * @var string
-	 */
-	public string $archive_dir;
-
-	/**
-	 * The time the archive was started.
-	 *
-	 * @var string
-	 */
-	public string $archive_start_time;
-
-	/**
 	 * Constructor
 	 */
 	public function __construct() {
@@ -50,8 +36,8 @@ class Fetch_Urls_Task extends Task {
 			'ss_static_pages',
 			Page::query()
 			    ->where( 'last_checked_at < ? OR last_checked_at IS NULL', $this->archive_start_time )
-				->limit( $batch_size )
-				->find(),
+			    ->limit( $batch_size )
+			    ->find(),
 			$this->archive_start_time
 		);
 
@@ -69,15 +55,14 @@ class Fetch_Urls_Task extends Task {
 		Util::debug_log( "Total pages: " . $total_pages . '; Pages remaining: ' . $pages_remaining );
 
 		while ( $static_page = array_shift( $static_pages ) ) {
-			$this->check_if_running();
 			Util::debug_log( "URL: " . $static_page->url );
 			$this->save_pages_status( count( $static_pages ) + 1, intval( $total_pages ) );
 
-			$excludable = apply_filters( 'ss_find_excludable', $this->find_excludable( $static_page ), $static_page );
+			$excludable = $this->find_excludable( $static_page );
 			if ( $excludable !== false ) {
-				$save_file   = false;
-				$follow_urls = false;
-				Util::debug_log( "Excludable found: URL: " . $static_page->url );
+				$save_file   = $excludable['do_not_save'] !== '1';
+				$follow_urls = $excludable['do_not_follow'] !== '1';
+				Util::debug_log( "Excludable found: URL: " . $excludable['url'] . ' DNS: ' . $excludable['do_not_save'] . ' DNF: ' . $excludable['do_not_follow'] );
 			} else {
 				$save_file   = true;
 				$follow_urls = true;
@@ -100,14 +85,14 @@ class Fetch_Urls_Task extends Task {
 				continue;
 			}
 
-			// Not found? It's maybe a redirection page. Let's try it without our param.
-			if ( $static_page->http_status_code === 404 ) {
-				$success = Url_Fetcher::instance()->fetch( $static_page, false );
+            // Not found? It's maybe a redirection page. Let's try it without our param.
+            if ( $static_page->http_status_code === 404 ) {
+                $success = Url_Fetcher::instance()->fetch( $static_page, false );
 
-				if ( ! $success ) {
-					continue;
-				}
-			}
+                if ( ! $success ) {
+                    continue;
+                }
+            }
 
 			// If we get a 30x redirect...
 			if ( in_array( $static_page->http_status_code, array( 301, 302, 303, 307, 308 ) ) ) {
@@ -141,7 +126,7 @@ class Fetch_Urls_Task extends Task {
 	/**
 	 * Process the response for a 200 response (success)
 	 *
-	 * @param \Simply_Static\Page $static_page Record to update.
+	 * @param Simply_Static\Page $static_page Record to update.
 	 * @param boolean $save_file Save a static copy of the page.
 	 * @param boolean $follow_urls Save found URLs to database.
 	 *
@@ -199,7 +184,7 @@ class Fetch_Urls_Task extends Task {
 		$origin_url      = Util::origin_url();
 		$destination_url = $this->options->get_destination_url();
 		$current_url     = $static_page->url;
-		$redirect_url    = remove_query_arg( 'simply_static_page', $static_page->redirect_url );
+		$redirect_url    = $static_page->redirect_url;
 
 		Util::debug_log( "redirect_url: " . $redirect_url );
 
@@ -272,50 +257,23 @@ class Fetch_Urls_Task extends Task {
 	}
 
 	/**
-	 * Find excludable.
+	 * Find executeable.
 	 *
 	 * @param object $static_page current page.
 	 *
 	 * @return bool
 	 */
 	public function find_excludable( $static_page ) {
-		$excluded = array( '.php', 'debug' );
+		$url         = $static_page->url;
+		$excludables = array();
 
-		// Exclude feeds if add_feeds is not true.
-		if ( ! $this->options->get( 'add_feeds' ) ) {
-			$excluded[] = 'feed';
-		}
-
-		// Exclude Rest API if add_rest_api is not true.
-		if ( ! $this->options->get( 'add_rest_api' ) ) {
-			$excluded[] = 'wp-json';
-		}
-
-		if ( ! empty( $this->options->get( 'urls_to_exclude' ) ) ) {
-			$excluded_by_option = explode( "\n", $this->options->get( 'urls_to_exclude' ) );
-
-			if ( is_array( $excluded_by_option ) ) {
-				$excluded = array_merge( $excluded, $excluded_by_option );
-			}
-		}
-
-		if ( apply_filters( 'simply_static_exclude_temp_dir', true ) ) {
-			$excluded[] = Util::get_temp_dir_url();
-		}
-
-		$excluded = apply_filters( 'ss_excluded_by_default', $excluded );
-
-		if ( $excluded ) {
-			$excluded = array_filter( $excluded );
-		}
-
-		if ( ! empty( $excluded ) ) {
-			foreach ( $excluded as $excludable ) {
-				$url = $static_page->url;
-
-				if ( strpos( $url, $excludable ) !== false ) {
-					return true;
-				}
+		foreach ( $this->options->get( 'urls_to_exclude' ) as $excludable ) {
+			// using | as the delimiter for regex instead of the traditional /
+			// because | won't show up in a path (it would have to be url-encoded)
+			$regex  = '|' . $excludable['url'] . '|';
+			$result = preg_match( $regex, $url );
+			if ( $result === 1 ) {
+				return $excludable;
 			}
 		}
 
@@ -339,17 +297,7 @@ class Fetch_Urls_Task extends Task {
 		$child_static_page = Page::query()->find_or_create_by( 'url', $child_url );
 		if ( $child_static_page->found_on_id === null || $child_static_page->updated_at < $this->archive_start_time ) {
 			$child_static_page->found_on_id = $static_page->id;
-			if ( ! $child_static_page->post_id ) {
-				$id = url_to_postid( $child_url );
-				if ( $id ) {
-					$child_static_page->post_id = $id;
-				}
-			}
-
-			$child_static_page->handler = apply_filters( 'simply_static_handler_class_on_url_found', $static_page->get_handler_class(), $child_url, $static_page );
-
-			do_action( 'simply_static_child_page_found_on_url_before_save', $child_static_page, $static_page );
-
+			$child_static_page->handler     = apply_filters( 'simply_static_handler_class_on_url_found', $static_page->get_handler_class(), $child_url, $static_page );
 			$child_static_page->save();
 		}
 	}

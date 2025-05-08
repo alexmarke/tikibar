@@ -1,5 +1,4 @@
 <?php
-
 namespace Simply_Static;
 
 // Exit if accessed directly.
@@ -36,7 +35,7 @@ class Page extends Model {
 		'build_id'            => 'BIGINT(20) UNSIGNED NULL',
 		'post_id'             => 'BIGINT(20) UNSIGNED NULL',
 		'found_on_id'         => 'BIGINT(20) UNSIGNED NULL',
-		'site_id'             => 'BIGINT(20) UNSIGNED NULL',
+        'site_id'             => 'BIGINT(20) UNSIGNED NULL',
 		'url'                 => 'VARCHAR(255) NOT NULL',
 		'redirect_url'        => 'TEXT NULL',
 		'file_path'           => 'VARCHAR(255) NULL',
@@ -45,8 +44,7 @@ class Page extends Model {
 		'content_hash'        => 'BINARY(20) NULL',
 		'error_message'       => 'VARCHAR(255) NULL',
 		'status_message'      => 'VARCHAR(255) NULL',
-		'handler'             => 'VARCHAR(255) NULL',
-		'json'                => 'TEXT NULL',
+        'handler'             => 'VARCHAR(255) NULL',
 		'last_checked_at'     => "DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00'",
 		'last_modified_at'    => "DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00'",
 		'last_transferred_at' => "DATETIME NOT NULL DEFAULT '0000-00-00 00:00:00'",
@@ -110,15 +108,10 @@ class Page extends Model {
 	 * Check if the hash for the content matches the prior hash for the page
 	 *
 	 * @param string $sha1 The content of the page/file.
-	 *
 	 * @return boolean          Is the hash a match?
 	 */
 	public function is_content_identical( $sha1 ) {
-		$hash = $this->content_hash ?? '';
-
-		Util::debug_log( 'Checking Content Identical:' . $sha1 . '===' . $hash . '. Value: ' . ( $hash && strpos( $sha1, $hash ) === 0 ? 'TRUE' : 'FALSE' ) );
-
-		return $hash && strpos( $sha1, $hash ) === 0;
+		return $sha1 === $this->content_hash;
 	}
 
 	/**
@@ -127,7 +120,7 @@ class Page extends Model {
 	 * @param string $sha1 The content of the page/file.
 	 */
 	public function set_content_hash( $sha1 ) {
-		$this->content_hash     = $sha1;
+		$this->content_hash = $sha1;
 		$this->last_modified_at = Util::formatted_datetime();
 	}
 
@@ -140,27 +133,11 @@ class Page extends Model {
 	 * @param string $message The error message.
 	 */
 	public function set_error_message( $message ) {
-		// Already has the same message.
-		if ( $this->has_error_message( $message ) ) {
-			return;
-		}
-
 		if ( $this->error_message ) {
 			$this->error_message = $this->error_message . '; ' . $message;
 		} else {
 			$this->error_message = $message;
 		}
-	}
-
-	protected function has_error_message( $message ) {
-		if ( ! $this->error_message ) {
-			return false;
-		}
-
-		$errors = explode( '; ', $this->error_message );
-		$index  = array_search( $message, $errors, true );
-
-		return false !== $index && $index >= 0;
 	}
 
 	/**
@@ -172,142 +149,68 @@ class Page extends Model {
 	 * @param string $message The status message.
 	 */
 	public function set_status_message( $message ) {
-		$this->status_message = $message;
+		if ( $this->status_message ) {
+			$this->status_message = $this->status_message . '; ' . $message;
+		} else {
+			$this->status_message = $message;
+		}
 	}
 
 	/**
 	 * Check the content type.
 	 *
-	 * @param string $content_type given content type.
-	 *
+	 * @param  string $content_type given content type.
 	 * @return boolean
 	 */
 	public function is_type( $content_type ) {
-		if ( ! is_null( $this->content_type ) ) {
-			return stripos( $this->content_type, $content_type ) !== false;
-		}
-
-		return false;
+		return stripos( $this->content_type, $content_type ) !== false;
 	}
 
-	/**
-	 * Return if it's a binary file.
-	 *
-	 * @return bool
-	 */
-	public function is_binary_file() {
-		if ( $this->is_type( 'application/octet-stream' ) ) {
-			return true;
-		}
+    /**
+     * Return if it's a binary file.
+     *
+     * @return bool
+     */
+    public function is_binary_file() {
+        return $this->is_type('application/octet-stream') || $this->is_type('image');
+    }
 
-		if ( $this->is_type( 'image' ) ) {
-			return true;
-		}
+    public function get_handler_class() {
+        $handler = $this->handler ?? Page_Handler::class;
 
-		if ( null === $this->content_type && $this->get_handler_class() === Additional_File_Handler::class ) {
-			return true;
-		}
+        if ( ! class_exists( $handler ) ) {
+            $handler = '\Simply_Static\\' . $handler;
+        }
 
-		return false;
-	}
+        if ( ! class_exists( $handler ) ) {
+            $handler = Page_Handler::class;
+        }
 
-	public function get_handler_class() {
-		$handler = $this->handler ?? Page_Handler::class;
+        return $handler;
+    }
 
-		if ( ! class_exists( $handler ) ) {
-			$handler = '\Simply_Static\\' . $handler;
-		}
+    /**
+     * Get the Page Handler based on the column saved.
+     *
+     * @return Page_Handler
+     */
+    public function get_handler() {
+        $handler_class = $this->get_handler_class();
 
-		if ( ! class_exists( $handler ) ) {
-			$handler = Page_Handler::class;
-		}
+        return new $handler_class( $this );
+    }
 
-		return $handler;
-	}
+    /**
+     * Set the attributes of the model
+     *
+     * @param  array $attributes Array of attributes to set.
+     * @return static            An instance of the class.
+     */
+    public function attributes( $attributes ) {
+        if ( empty( $attributes['site_id'] ) ) {
+            $attributes['site_id'] = get_current_blog_id();
+        }
 
-	/**
-	 * Get the Page Handler based on the column saved.
-	 *
-	 * @return Page_Handler
-	 */
-	public function get_handler() {
-		$handler_class = $this->get_handler_class();
-
-		return new $handler_class( $this );
-	}
-
-	/**
-	 * Set the attributes of the model
-	 *
-	 * @param array $attributes Array of attributes to set.
-	 *
-	 * @return static            An instance of the class.
-	 */
-	public function attributes( $attributes ) {
-		if ( empty( $attributes['site_id'] ) ) {
-			$attributes['site_id'] = get_current_blog_id();
-		}
-
-		return parent::attributes( $attributes );
-	}
-
-	/**
-	 * Get JSON
-	 * @return mixed
-	 */
-	public function get_json() {
-		return json_decode( $this->json ?? '', true );
-	}
-
-	/**
-	 * Set JSON
-	 *
-	 * @param array $data Data.
-	 *
-	 * @return void
-	 */
-	public function set_json( $data ) {
-		$this->json = json_encode( $data );
-	}
-
-	/**
-	 * Get the JSON data by a key.
-	 *
-	 * @param string $key Key in JSON.
-	 *
-	 * @return mixed|null
-	 */
-	public function get_json_data_by_key( $key ) {
-		$json = $this->get_json();
-
-		if ( ! $json ) {
-			return null;
-		}
-
-		if ( empty( $json[ $key ] ) ) {
-			return null;
-		}
-
-		return $json[ $key ];
-	}
-
-	/**
-	 * Set the JSON data for a key.
-	 *
-	 * @param string $key Key under which sets the data.
-	 * @param mixed $data Mixed data.
-	 *
-	 * @return void
-	 */
-	public function set_json_data_by_key( $key, $data ) {
-		$json = $this->get_json();
-
-		if ( ! $json ) {
-			$json = [];
-		}
-
-		$json[ $key ] = $data;
-
-		$this->set_json( $json );
-	}
+        return parent::attributes( $attributes );
+    }
 }

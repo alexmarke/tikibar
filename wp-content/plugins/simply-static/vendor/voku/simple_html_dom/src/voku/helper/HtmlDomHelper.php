@@ -6,6 +6,7 @@ namespace voku\helper;
 
 final class HtmlDomHelper
 {
+
     /**
      * @param string $html
      * @param string $optionStr
@@ -64,7 +65,7 @@ final class HtmlDomHelper
         }
 
         foreach ($attributes as $attributeName => $attributeValue) {
-            $domElement->setAttribute($attributeName, $attributeValue, true);
+            $domElement->setAttribute($attributeName, $attributeValue);
         }
 
         return $domElement->html();

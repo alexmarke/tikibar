@@ -324,9 +324,9 @@ interface SimpleHtmlDomInterface extends \IteratorAggregate
     /**
      * Returns the parent of node.
      *
-     * @return SimpleHtmlDomInterface|null
+     * @return SimpleHtmlDomInterface
      */
-    public function parentNode(): ?self;
+    public function parentNode(): self;
 
     /**
      * Returns the previous sibling of node.

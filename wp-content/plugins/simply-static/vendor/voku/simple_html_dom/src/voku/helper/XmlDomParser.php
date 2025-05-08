@@ -204,6 +204,7 @@ class XmlDomParser extends AbstractDomParser
         }
 
         if ($documentFound === false) {
+
             // UTF-8 hack: http://php.net/manual/en/domdocument.loadhtml.php#95251
             $xmlHackUsed = false;
             /** @noinspection StringFragmentMisplacedInspection */

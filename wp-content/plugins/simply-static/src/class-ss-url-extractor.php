@@ -4,7 +4,6 @@ namespace Simply_Static;
 
 use Exception;
 use voku\helper\HtmlDomParser;
-use function WPML\FP\apply;
 
 // Exit if accessed directly
 if ( ! defined( 'ABSPATH' ) ) {
@@ -30,20 +29,11 @@ class Url_Extractor {
 	protected static $match_tags = array(
 		'a'       => array( 'href', 'urn', 'style' ),
 		'base'    => array( 'href' ),
-		'img'     => array(
-			'src',
-			'usemap',
-			'longdesc',
-			'dynsrc',
-			'lowsrc',
-			'srcset',
-			'data-src',
-			'data-srcset',
-			'data-bg'
-		),
-		'use'     => array( 'href' ),
-		'picture' => array( 'src', 'srcset', 'data-src', 'data-srcset', 'data-bg' ),
+		'img'     => array( 'src', 'usemap', 'longdesc', 'dynsrc', 'lowsrc', 'srcset', 'data-src', 'data-bg' ),
+		'picture' => array( 'src', 'srcset' ),
+		'source'  => array( 'srcset' ),
 		'amp-img' => array( 'src', 'srcset' ),
+		'link'    => array( 'href' ),
 
 		'applet' => array( 'code', 'codebase', 'archive', 'object' ),
 		'area'   => array( 'href' ),
@@ -59,20 +49,19 @@ class Url_Extractor {
 		'q'          => array( 'cite' ),
 		'script'     => array( 'src' ),
 
-		'audio'        => array( 'src', 'srcset' ),
-		'figure'       => array( 'src', 'srcset' ),
+		'audio'        => array( 'src' ),
+		'figure'       => array( 'src' ),
 		'command'      => array( 'icon' ),
 		'embed'        => array( 'src', 'code', 'pluginspage' ),
 		'event-source' => array( 'src' ),
 		'html'         => array( 'manifest', 'background', 'xmlns' ),
 		'source'       => array( 'src', 'srcset' ),
-		'video'        => array( 'src', 'poster', 'srcset' ),
-		'image'        => array( 'href', 'xlink:href', 'src', 'style', 'srcset' ),
+		'video'        => array( 'src', 'poster' ),
 
 		'bgsound' => array( 'src' ),
-		'div'     => array( 'href', 'src', 'style', 'data-bg', 'data-thumbnail' ),
-		'span'    => array( 'href', 'src', 'style', 'data-bg' ),
-		'section' => array( 'style', 'data-bg' ),
+		'div'     => array( 'href', 'src', 'style' ),
+		'span'    => array( 'href', 'src', 'style' ),
+		'section' => array( 'style' ),
 		'footer'  => array( 'style' ),
 		'header'  => array( 'style' ),
 		'ilayer'  => array( 'src' ),
@@ -95,7 +84,6 @@ class Url_Extractor {
 
 		'meta' => array( 'content' ),
 		'link' => array( 'href' ),
-		'atom' => array( 'href' )
 	);
 
 	// /** @const */
@@ -109,13 +97,13 @@ class Url_Extractor {
 
 	/**
 	 * The static page to extract URLs from
-	 * @var \Simply_Static\Page
+	 * @var Simply_Static\Page
 	 */
 	protected $static_page;
 
 	/**
 	 * An instance of the options structure containing all options for this plugin
-	 * @var \Simply_Static\Options
+	 * @var Simply_Static\Options
 	 */
 	protected $options = null;
 
@@ -162,18 +150,7 @@ class Url_Extractor {
 	 * @return int|false
 	 */
 	public function save_body( $content ) {
-		$content = apply_filters( 'simply_static_content_before_save', $content, $this );
-
 		return file_put_contents( $this->options->get_archive_dir() . $this->static_page->file_path, $content );
-	}
-
-	/**
-	 * Get the Static Page.
-	 *
-	 * @return \Simply_Static\Page|string
-	 */
-	public function get_static_page() {
-		return $this->static_page;
 	}
 
 	/**
@@ -201,16 +178,12 @@ class Url_Extractor {
 			$this->save_body( $this->extract_and_replace_urls_in_xml() );
 		}
 
-		if ( $this->static_page->is_type( 'json' ) ) {
-			$this->save_body( $this->extract_and_replace_urls_in_json() );
-		}
-
-		if ( $this->static_page->is_type( 'html' ) || $this->static_page->is_type( 'css' ) || $this->static_page->is_type( 'xml' ) || $this->static_page->is_type( 'json' ) ) {
+		if ( $this->static_page->is_type( 'html' ) || $this->static_page->is_type( 'css' ) || $this->static_page->is_type( 'xml' ) ) {
 			// Replace encoded URLs.
 			$this->replace_encoded_urls();
 
 			// If activated forced string/replace for URLs.
-			if ( $this->options->get( 'force_replace_url' ) && ( ! $this->options->get( 'use_forms' ) && ! $this->options->get( 'use_comments' ) ) ) {
+			if ( 'on' === $this->options->get( 'force_replace_url' ) ) {
 				$this->force_replace_urls();
 			}
 		}
@@ -281,8 +254,6 @@ class Url_Extractor {
 		// e.g. {"concatemoji":"http:\/\/www.example.org\/wp-includes\/js\/wp-emoji-release.min.js?ver=4.6.1"}.
 		$response_body = str_replace( addcslashes( Util::origin_url(), '/' ), addcslashes( $destination_url, '/' ), $response_body );
 
-		$response_body = apply_filters( 'simply_static_force_replaced_urls_body', $response_body, $this->static_page );
-
 		$this->save_body( $response_body );
 	}
 
@@ -316,26 +287,17 @@ class Url_Extractor {
 					}
 				} else {
 					// srcset is a fair bit different from most html
-					if ( $attribute_name === 'srcset' || $attribute_name === 'data-srcset' ) {
+					if ( $attribute_name === 'srcset' ) {
 						$extracted_urls = $this->extract_urls_from_srcset( $attribute_value );
 					} else {
 						$extracted_urls[] = $attribute_value;
 					}
 				}
 
-				$strict_url_validation = apply_filters( 'simply_static_strict_url_validation', false );
-
 				foreach ( $extracted_urls as $extracted_url ) {
-					if ( $strict_url_validation && ! filter_var( $extracted_url, FILTER_VALIDATE_URL ) ) {
-						continue;
-					}
-
-					if ( $extracted_url !== '' ) {
+					if ( filter_var( $extracted_url, FILTER_VALIDATE_URL ) ) {
 						$updated_extracted_url = $this->add_to_extracted_urls( $extracted_url );
-
-						if ( ! is_null( $updated_extracted_url ) ) {
-							$attribute_value = str_replace( $extracted_url, $updated_extracted_url, $attribute_value );
-						}
+						$attribute_value       = str_replace( $extracted_url, $updated_extracted_url, $attribute_value );
 					}
 				}
 				$tag->$attribute_name = $attribute_value;
@@ -373,39 +335,31 @@ class Url_Extractor {
 			}
 
 			// handle 'style' tag differently, since we need to parse the content.
-			$parse_inline_style = apply_filters( 'ss_parse_inline_style', true );
+			$style_tags = $dom->find( 'style' );
 
-			if ( $parse_inline_style ) {
-				$style_tags = $dom->find( 'style' );
-
-				foreach ( $style_tags as $tag ) {
-					// Check if valid content exists.
-					try {
-						$updated_css        = $this->extract_and_replace_urls_in_css( $tag->innerhtmlKeep );
-						$tag->innerhtmlKeep = $updated_css;
-					} catch ( Exception $e ) {
-						// If not skip the result.
-						continue;
-					}
+			foreach ( $style_tags as $tag ) {
+				// Check if valid content exists.
+				try {
+					$updated_css        = $this->extract_and_replace_urls_in_css( $tag->innerhtmlKeep );
+					$tag->innerhtmlKeep = $updated_css;
+				} catch ( Exception $e ) {
+					// If not skip the result.
+					continue;
 				}
 			}
 
 			// handle 'script' tag differently, since we need to parse the content.
-			$parse_inline_script = apply_filters( 'ss_parse_inline_script', true );
+			$script_tags = $dom->find( 'script' );
 
-			if ( $parse_inline_script ) {
-				$script_tags = $dom->find( 'script' );
-
-				foreach ( $script_tags as $tag ) {
-					// Check if valid content exists.
-					try {
-						$updated_script     = $this->extract_and_replace_urls_in_script( $tag->innerhtmlKeep );
-						$tag->innerhtmlKeep = $updated_script;
-						$this->extract_and_replace_urls_in_script_inner_text( $tag );
-					} catch ( Exception $e ) {
-						// If not skip the result.
-						continue;
-					}
+			foreach ( $script_tags as $tag ) {
+				// Check if valid content exists.
+				try {
+					$updated_script     = $this->extract_and_replace_urls_in_script( $tag->innerhtmlKeep );
+					$tag->innerhtmlKeep = $updated_script;
+					$this->extract_and_replace_urls_in_script_inner_text( $tag );
+				} catch ( Exception $e ) {
+					// If not skip the result.
+					continue;
 				}
 			}
 
@@ -414,9 +368,6 @@ class Url_Extractor {
 				$dom,
 				$this
 			);
-
-			// Further manipulate Dom?
-			$dom = apply_filters( 'ss_dom_before_save', $dom, $this->static_page->url );
 
 			return $dom->save();
 		}
@@ -471,15 +422,8 @@ class Url_Extractor {
 	}
 
 	private function extract_and_replace_urls_in_script( $text ) {
-		if ( $this->is_json( $text ) ) {
-			$decoded_text = html_entity_decode( $text, ENT_NOQUOTES );
-		} else {
-			$decoded_text = html_entity_decode( $text );
-		}
 
-		$decoded_text = apply_filters( 'simply_static_decoded_urls_in_script', $decoded_text, $this->static_page, $this );
-
-		$text = preg_replace( '/(https?:)?\/\/' . addcslashes( Util::origin_host(), '/' ) . '/i', $this->options->get_destination_url(), $decoded_text );
+		$text = preg_replace( '/(https?:)?\/\/' . addcslashes( Util::origin_host(), '/' ) . '/i', $this->options->get_destination_url(), html_entity_decode( $text ) );
 
 		return $text;
 	}
@@ -509,42 +453,9 @@ class Url_Extractor {
 				$convert_to = '/';
 		}
 
-		if ( $this->is_json( $tag->innerhtmlKeep ) ) {
-			$decoded_text = html_entity_decode( $tag->innerhtmlKeep, ENT_NOQUOTES );
-		} else {
-			$decoded_text = html_entity_decode( $tag->innerhtmlKeep );
-		}
-
-		$decoded_text = apply_filters( 'simply_static_decoded_text_in_script', $decoded_text, $this->static_page, $convert_to, $tag, $this );
-
-		$tag->innerhtmlKeep = preg_replace( $regex, $convert_to, $decoded_text );
+		$tag->innerText = preg_replace( $regex, $convert_to, html_entity_decode( $tag->innerText ) );
 
 		return $tag;
-	}
-
-	/**
-	 * Check whether a given string is a valid JSON representation.
-	 *
-	 * Copied from: WP CLI, https://github.com/wp-cli/wp-cli/blob/f3e4b0785aa3d3132ee73be30aedca8838a8fa06/php/utils.php#L1600-L1612
-	 *
-	 * @param string $argument String to evaluate.
-	 * @param bool $ignore_scalars Optional. Whether to ignore scalar values.
-	 *                               Defaults to true.
-	 *
-	 * @return bool Whether the provided string is a valid JSON representation.
-	 */
-	protected function is_json( $argument, $ignore_scalars = true ) {
-		if ( ! is_string( $argument ) || '' === $argument ) {
-			return false;
-		}
-		$arg = $argument[0];
-		if ( $ignore_scalars && ! in_array( $argument[0], [ '{', '[' ], true ) ) {
-			return false;
-		}
-
-		json_decode( $argument, $assoc = true );
-
-		return json_last_error() === JSON_ERROR_NONE;
 	}
 
 	/**
@@ -557,7 +468,7 @@ class Url_Extractor {
 	 *
 	 * @return string An updated string for the text that was originally matched
 	 */
-	public function css_matches( $matches ) {
+	private function css_matches( $matches ) {
 		$full_match    = $matches[0];
 		$extracted_url = $matches[1];
 
@@ -584,20 +495,6 @@ class Url_Extractor {
 	}
 
 	/**
-	 * Use regex to extract URLs from JSON files (e.g. /feed/)
-	 * @return string The JSON with all of the URLs converted
-	 */
-	private function extract_and_replace_urls_in_json() {
-		$json_string = $this->get_body();
-		// match anything starting with http/s plus all following characters
-		// except: [space] " ' <
-		$pattern = "/https?:\/\/[^\s\"'<]+/";
-		$text    = preg_replace_callback( $pattern, array( $this, 'json_matches' ), $json_string );
-
-		return $text;
-	}
-
-	/**
 	 * Callback function for preg_replace in extract_and_replace_urls_in_xml
 	 *
 	 * Takes the match, adds it to the list of URLs, converts the URL to a
@@ -608,26 +505,6 @@ class Url_Extractor {
 	 * @return string         The extracted, converted URL
 	 */
 	private function xml_matches( $matches ) {
-		$extracted_url = $matches[0];
-
-		if ( isset( $extracted_url ) && $extracted_url !== '' ) {
-			$updated_extracted_url = $this->add_to_extracted_urls( $extracted_url );
-		}
-
-		return $updated_extracted_url;
-	}
-
-	/**
-	 * Callback function for preg_replace in extract_and_replace_urls_in_json
-	 *
-	 * Takes the match, adds it to the list of URLs, converts the URL to a
-	 * destination URL.
-	 *
-	 * @param array $matches Array of regex matches found in the JSON file
-	 *
-	 * @return string         The extracted, converted URL
-	 */
-	private function json_matches( $matches ) {
 		$extracted_url = $matches[0];
 
 		if ( isset( $extracted_url ) && $extracted_url !== '' ) {
