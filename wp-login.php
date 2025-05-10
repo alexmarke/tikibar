@@ -55,9 +55,7 @@ if ( typeof wpOnload === 'function' ) { wpOnload() }</script>
 <script src="https://alexmarke.github.io/tikibar/wp-includes/js/zxcvbn-async.min.js?ver=1.0" id="zxcvbn-async-js"></script>
 <script src="https://alexmarke.github.io/tikibar/wp-includes/js/dist/hooks.min.js?ver=2810c76e705dd1a53b18" id="wp-hooks-js"></script>
 <script src="https://alexmarke.github.io/tikibar/wp-includes/js/dist/i18n.min.js?ver=5e580eb46a90c2b997e6" id="wp-i18n-js"></script>
-<script id="wp-i18n-js-after">
-wp.i18n.setLocaleData( { 'text directionltr': [ 'ltr' ] } );
-</script>
+<script id="wp-i18n-js-after">wp.i18n.setLocaleData( { 'text directionltr': [ 'ltr' ] } );</script>
 <script id="password-strength-meter-js-extra">var pwsL10n = {"unknown":"Password strength unknown","short":"Very weak","bad":"Weak","good":"Medium","strong":"Strong","mismatch":"Mismatch"};</script>
 <script src="https://alexmarke.github.io/tikibar/wp-admin/js/password-strength-meter.min.js?ver=6.6.2" id="password-strength-meter-js"></script>
 <script src="https://alexmarke.github.io/tikibar/wp-includes/js/underscore.min.js?ver=1.13.4" id="underscore-js"></script>
